@@ -27,6 +27,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'spotify_id',
+        'spotify_access_token',
     ];
 
     /**
@@ -36,6 +38,8 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'spotify_id',
+        'spotify_access_token',
         'remember_token',
         'two_factor_recovery_codes',
         'two_factor_secret',
