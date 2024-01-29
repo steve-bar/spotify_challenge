@@ -27,5 +27,5 @@ Route::middleware([
     })->name('dashboard');
 });
 
-Route::get('login/spotify', [SpotifyController::class, 'redirectToSpotifyProvider'])->name('spotify.login');
-Route::get('auth/spotify/callback', [SpotifyController::class, 'handleSpotifyCallback'])->name('spotify.callback');
+Route::get('login/spotify', [SpotifyController::class, 'redirectToSpotifyProvider'])->name('login.spotify');
+Route::get('auth/spotify/callback', [SpotifyController::class, 'handleSpotifyCallback'])->name('login.spotify.callback');
