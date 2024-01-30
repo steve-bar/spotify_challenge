@@ -27,3 +27,4 @@ Route::middleware([
 
 Route::get('login/spotify', [SpotifyController::class, 'redirectToSpotifyProvider'])->name('login.spotify');
 Route::get('auth/spotify/callback', [SpotifyController::class, 'handleSpotifyCallback'])->name('login.spotify.callback');
+Route::get('/spotify/playlist', ['middleware' => 'AuthenticateSpotifyUser'], 'SpotifyPlaylistController@getPlaylist')->name('spotify.getPlayList');
