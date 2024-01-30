@@ -13,16 +13,20 @@ class SpotifyPlaylistController extends Controller
         $accessToken = $request->user()->spotifyAccessToken;
         $spotify = new Spotify($accessToken);
 
-        $playlistId = $request->input('playlistId');
+        $playlists = $spotify->getUserPlaylists();
 
-        try {
-            $playlist = $spotify->getPlaylist($playlistId);
-        } catch (SpotifyException $e) {
-            return response()->json([
-                'error' => $e->getMessage()
-            ], 400);
+        // Store the playlists in the database with a timestamp
+        Playlist::query()->delete();
+        foreach ($playlists as $playlist) {
+            Playlist::create([
+                'user_id' => $request->user()->id,
+                'spotify_id' => $playlist->id,
+                'name' => $playlist->name,
+                'uri' => $playlist->uri,
+                'last_modified' => now(),
+            ]);
         }
 
-        return response()->json($playlist);
+        return response()->json($playlists);
     }
 }
