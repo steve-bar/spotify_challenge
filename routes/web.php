@@ -20,10 +20,8 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', function () {return view('dashboard');})->name('dashboard');
+    Route::get('login/spotify', [SpotifyLoginController::class, 'redirectToSpotifyProvider'])->name('login.spotify');
+    Route::get('auth/spotify/callback', [SpotifyLoginController::class, 'handleSpotifyCallback'])->name('login.spotify.callback');
 });
 
-Route::get('login/spotify', [SpotifyController::class, 'redirectToSpotifyProvider'])->name('login.spotify');
-Route::get('auth/spotify/callback', [SpotifyController::class, 'handleSpotifyCallback'])->name('login.spotify.callback');

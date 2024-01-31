@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Aerni\Spotify\SpotifyClient;
-use Laravel\Socialite\Facades\Socialite;
-use Illuminate\Http\Request;
 use App\Models\User;
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
-class SpotifyController extends Controller
+class SpotifyLoginController extends Controller
 {
     public function redirectToSpotifyProvider()
     {
@@ -18,27 +18,25 @@ class SpotifyController extends Controller
     {
         try {
             $user = Socialite::driver('spotify')->user();
-
-            // Check if the user already exists
             $existingUser = User::where('spotify_id', $user->id)->first();
 
             if ($existingUser) {
                 // Log the existing user in
-                auth()->login($existingUser);
-
+                Auth::login($existingUser);
                 return redirect()->intended('/');
             } else {
                 // Create a new user and store their Spotify data
                 $newUser = User::create([
-                    'spotify_id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'avatar' => $user->avatar[0]['url'],
+                    'spotify_id' => $user->id,
                 ]);
 
-                // Log the new user in
-                auth()->login($newUser);
+                // Associate the Spotify account with the newly created user
+                $newUser->spotify()->associate($user->id)->save();
 
+                // Log the new user in
+                Auth::login($newUser);
                 return redirect()->intended('/');
             }
         } catch (\Exception $e) {
