@@ -5,71 +5,58 @@ namespace App\Providers;
 use App\Actions\Jetstream\DeleteUser;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Jetstream\Jetstream;
+use App\Models\User;
+use Illuminate\Http\Request;
 use Laravel\Fortify\Fortify;
+use Illuminate\Foundation\Application;
+use App\Http\Controllers\SpotifyLoginController;
 
-class JetstreamServiceController extends Controller
+class JetstreamServiceProvider extends ServiceProvider
 {
-    use RegistersUsers;
+    protected $spotifyLoginController;
 
-    protected $spotifyController;
-
-    public function __construct(SpotifyController $spotifyController)
+    public function __construct(Application $app)
     {
-        $this->spotifyController = $spotifyController;
-        $this->middleware('auth:sanctum')->except(['register', 'login']);
+        parent::__construct($app);
+        $this->spotifyLoginController = $this->app->make(SpotifyLoginController::class);
     }
 
-    public function register(Request $request)
+    public function register()
     {
-        try {
-
-            $user = $this->spotifyController->registerWithSpotify($request->input('spotify_id'));
-
-            if ($user) {
-
-                auth()->login($user);
-                return redirect()->intended('dashboard');
-            }
-        } catch (Exception $e) {
-
-            $this->validator($request->all())->validate();
-
-            $user = User::create([
-                'name' => $request->input('name'),
-                'email' => $request->input('email'),
-                'password' => Hash::make($request->input('password')),
-            ]);
-
-            if ($request->has('avatar')) {
-                $user->avatar = $request->file('avatar')->store('avatars');
-                $user->save();
-            }
-
-            $this->guard()->attempt($request->only('email', 'password'));
-            return redirect()->intended('dashboard');
-        }
+        $this->app->singleton(SpotifyLoginController::class, function ($app) {
+        return new SpotifyLoginController();
+        });
     }
 
     public function login(Request $request)
     {
         try {
-            // Attempt to log in using Spotify credentials
-            $user = $this->spotifyController->loginWithSpotify($request->input('spotify_id'));
+            if ($request->has('spotify')) {
+                // Handle Spotify login
+                $user = $this->spotifyLoginController->handleSpotifyCallback($request);
 
-            if ($user) {
-                // If successful, log the user in and redirect
+                // Log the user in
                 auth()->login($user);
-                return redirect()->intended('dashboard');
+
+                return redirect()->intended('/spotify.display.playlists');
+            } else {
+                // Handle email and password login
+                $credentials = $request->only(['email', 'password']);
+
+                if (! $token = $this->guard()->attempt($credentials)) {
+                    return response()->json(['message' => 'Incorrect credentials.'], 401);
+                }
+
+                return response()->json(['accessToken' => $token]);
             }
         } catch (Exception $e) {
-            // If Spotify login fails, handle standard login
-            $credentials = $request->only('email', 'password');
-
-            if (! $token = $this->guard()->attempt($credentials)) {
+            if ($e->getCode() === 10500) {
+                // Spotify login failed
                 return response()->json(['message' => 'Incorrect credentials.'], 401);
+            } else {
+                // Handle other errors
+                throw new Exception('Failed to log in.');
             }
-
-            return response()->json(['accessToken' => $token]);
         }
     }
 }
